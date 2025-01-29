@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Shopping Application</title>
+	<link rel="stylesheet" href="/styles/style.css">
+</head>
+
+<body>
+	<%- include('./partials/header') %>
+		<div class="shopping-container">
+			<h1>Welcome to the Shop</h1>
+			<!-- Shopping Cart link -->
+			<div class="cart-link">
+				<a href="/cart">Go to Cart</a>
+			</div>
+			<!-- Display available products -->
+			<div class="product-list">
+				<% products.forEach(function(product) { %>
+					<div class="product-item">
+						<img src="<%= product.image %>" alt="<%= product.name %>" class="product-image">
+						<h3>
+							<%= product.name %>
+						</h3>
+						<p>
+							<%= product.description %>
+						</p>
+						<p><strong>Price:</strong> $<%= product.price %>
+						</p>
+						<p>Total Quantity: <%= product.quantity %>
+						</p>
+
+						<% if (product.totalAddedByUser===0 ){ %>
+							<% if (product.remainingQty>0
+								){ %>
+								<p><strong>Quantity Available:</strong>
+									<%= product.remainingQty %>
+								</p>
+								<form action="/api/cart" method="POST">
+									<input type="hidden" name="productId" value="<%= product._id %>" />
+									<button type="submit">Add to Cart</button>
+								</form>
+								<% } else { %>
+									<p class="sold-out">Sold Out</p>
+									<% } %>
+										<% } else { %>
+											<p><strong>Quantity Available:</strong>
+												<%= product.remainingQty %>
+											</p>
+											<form action="/api/cart/<%= product.cartDetail._id %>?_method=DELETE" method="POST">
+												<button type="submit">Remove from Cart</button>
+											</form>
+											<% } %>
+
+
+
+					</div>
+					<% }); %>
+			</div>
+
+
+		</div>
+		<% if (locals.error) { %>
+			<div class="container">
+				<p class="error-message">
+					<%= locals.error %>
+				</p>
+			</div> <!-- Display error message if exists -->
+			<% } %>
+</body>
+
+</html>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping Application</title>
+    <link rel="stylesheet" href="/styles/style.css"> 
+</head>
+
+<body>
+    <div class="centered-container">
+        <div class="form-container">
+            <h1>Edit Product</h1>
+            <!-- Login Form -->
+            <form action="/api/products/<%= product._id %>?_method=PUT" method="POST" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="name">Name:</label>
+                    <input type="text" id="name" name="name" placeholder="Enter Name" value="<%= product.name %>"
+                        required />
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Description:</label>
+                    <textarea id="description" name="description" placeholder="Enter Description" required><%= product.description %>
+                    </textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="price">Price:</label>
+                    <input type="number" id="price" name="price" placeholder="Enter Price" value="<%= product.price %>"
+                        required />
+                </div>
+                <div class="form-group">
+                    <label for="quantity">Quantity:</label>
+                    <input type="number" id="quantity" name="quantity" placeholder="Enter Quantity"
+                        value="<%= product.quantity %>" required />
+                </div>
+                <div class="form-group">
+                    <label for="image">Product Image:</label>
+                    <input type="file" id="image" name="image" accept="image/*" />
+                </div>
+
+                <% if (product.image) { %>
+                    <img src="<%= product.image %>" alt="<%= product.name %>" class="product-image" /><br />
+                    <input type="hidden" name="oldImage" value="<%= product.image %>" />
+                    <% } %>
+
+                        <% if (locals.error) { %>
+                            <p class="error-message">
+                                <%= locals.error %>
+                            </p> <!-- Display error message if exists -->
+                            <% } %>
+
+                                <div class="form-group">
+                                    <button type="submit">Modify</button>
+                                </div>
+            </form>
+            <a href="/products/">Back to Product List</a>
+        </div>
+    </div>
+</body>
+
+</html>

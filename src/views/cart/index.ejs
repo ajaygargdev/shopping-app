@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Shopping App</title>
+</head>
+
+<body>
+	<%- include('../partials/header') %>
+		<input type="hidden" id="userId" value="<%= userId %>" />
+		<input type="hidden" id="port" value="<%= port %>" />
+		<div class="container">
+			<h1>Product List</h1>
+			<a href="/">Proceed to buy</a>
+			<% if (products.length> 0) { %>
+				<table border="1" id="main">
+					<thead>
+						<tr>
+							<th>Product</th>
+							<th>Description</th>
+							<th>Price</th>
+							<th>Remaining Qty</th>
+							<th>Quantity</th>
+							<th>Action</th>
+							<th>Total Price</th>
+						</tr>
+					</thead>
+					<tbody>
+						<% products.forEach(item=> { %>
+							<tr cart="<%=item.cartDetail._id%>" product="<%=item._id%>">
+								<td>
+									<img src="<%= item.image %>" alt="<%= item.name %>" width="100" />
+									<%= item.name %>
+								</td>
+								<td>
+									<%= item.description %>
+								</td price>
+								<td>$<%= item.price %>
+								</td>
+								<td remainingQty>
+									<%= item.remainingQty %>
+								</td>
+								<td>
+									<form action="/api/cart/<%= item.cartDetail._id %>?_method=PUT&_qty=-1"
+										method="POST">
+										<button type="submit">-</button>
+									</form>
+									<p style="text-align: center;" qty>
+										<%= item.cartDetail.quantity %>
+									</p>
+
+									<form action="/api/cart/<%= item.cartDetail._id %>?_method=PUT&_qty=1"
+										method="POST">
+										<button type="submit" <%= (!item.remainingQty) ? 'disabled' :'' %>>+</button>
+									</form>
+								</td>
+								<td>
+									<form action="/api/cart/<%= item.cartDetail._id %>?_method=DELETE&from=cart" method="POST">
+										<button type="submit">Remove</button>
+									</form>
+								</td>
+								<td totalPrice>
+									<%=item.price*item.cartDetail.quantity %>
+								</td>
+							</tr>
+
+							<% }) %>
+					</tbody>
+				</table>
+				<table id="total">
+					<tr>
+						<td>Total</td>
+						<td total>
+							<%= products.reduce(function(accumulator, item) { return accumulator +
+								item.price*item.cartDetail.quantity; }, 0) %>
+						</td>
+					</tr>
+				</table>
+				<% } else { %>
+					<p emptyCart>Cart is empty.</p>
+					<% } %>
+		</div>
+		<% if (locals.error) { %>
+			<div class="container">
+				<p class="error-message">
+					<%= locals.error %>
+				</p>
+			</div> <!-- Display error message if exists -->
+			<% } %>
+</body>
+<script defer>
+	window.onload = function () {
+		const port = document.getElementById("port")?.value || 8001;
+
+		const socket = new WebSocket(`ws://localhost:${port}`);
+		socket.onopen = function () {
+			console.log('WebSocket connection opened');
+			socket.send("sent from client:connection is opened"); //
+		};
+		// Listen for messages from the server
+		socket.onmessage = function (event) {
+
+			console.log(event);
+			const result = JSON.parse(event.data);
+			switch (result.type) {
+				case 'update':
+					updateProduct(result.data);
+					break;
+				case 'remove':
+					break;
+				case 'add':
+					break;
+			}
+		};
+		socket.onerror = function () {
+			console.log("Error----", arguments);
+		}
+
+		socket.onclose = () => {
+			console.log('WebSocket connection closed');
+		};
+		function updateProduct(data) {
+			const user = document.getElementById("userId").value;
+			console.log('user----', user);
+			for (let _product of data) {
+				const cart = (_product?.cartDetails || []).find(item => (item.updatedBy || item.createdBy) === user);
+				const product = cart ? _product : null;
+				let recordNode = document.querySelector(`[product='${_product._id}']`);
+				if (product) {
+
+					if ((!cart || cart.quantity == 0) && recordNode) {
+						recordNode.remove();
+					} else if (cart || cart.quantity > 0) {
+						if (!recordNode) {
+
+							let mainNode = document.getElementById('main');
+							if (!mainNode) {
+								mainNode = document.createElement('table');
+								mainNode.setAttribute('border', 1);
+								mainNode.setAttribute('id', 'main');
+								mainNode.innerHTML = `		<thead>
+				<tr>
+					<th>Product</th>
+					<th>Description</th>
+					<th>Price</th>
+					<th>Remaining Qty</th>
+					<th>Quantity</th>
+					<th>Action</th>
+					<th>Total Price</th>
+				</tr>
+			</thead>`;
+								document.querySelector('body .container').appendChild(mainNode);
+
+
+							}
+							recordNode = document.createElement('tr');
+							recordNode.setAttribute('cart', cart._id);
+							recordNode.setAttribute('product', cart.product);
+							mainNode.appendChild(recordNode);
+						}
+						recordNode.innerHTML = `
+						<td>
+							<img src="${product.image}" alt="${product.name}" width="100" />
+							${product.name}
+						</td>
+						<td>${product.description}
+						</td price>
+						<td>$${product.price}
+						</td>
+						<td remainingQty>
+							${product.remainingQty}
+						</td>
+						<td>
+							<form action="/api/cart/${cart._id}?_method=PUT&_qty=-1" method="POST">
+								<button type="submit">-</button>
+							</form>
+							<p style="text-align: center;" qty>
+								${cart.quantity}
+							</p>
+
+							<form action="/api/cart/${cart._id}?_method=PUT&_qty=1" method="POST">
+								<button type="submit" ${!product.remainingQty && 'disabled'}>+</button>
+							</form>
+						</td>
+						<td>
+							<form action="/api/cart/${cart._id}?_method=DELETE&from=cart" method="POST">
+								<button type="submit">Remove</button>
+							</form>
+						</td>
+						<td totalPrice>
+							${product.price * cart.quantity}
+						</td>`;
+					}
+				} else if (recordNode) {
+					recordNode.remove();
+				}
+			}
+
+			const totalPriceNodeList = document.querySelectorAll('[totalPrice]')
+			let total = 0;
+			for (totalPriceNode of totalPriceNodeList) {
+				total += parseInt(totalPriceNode.innerText);
+			}
+			let totalNode = document.getElementById('total');
+			if (total > 0) {
+				if (!totalNode) {
+					totalNode = document.createElement('table');
+					totalNode.setAttribute('id', 'total');
+					document.querySelector('body .container').appendChild(totalNode);
+				}
+				totalNode.innerHTML = `			<tr>
+				<td>Total</td>
+				<td total>
+				${total}
+				</td>
+			</tr>`;
+				const emptyCartNode = document.querySelector('[emptyCart]');
+				if (emptyCartNode) {
+					emptyCartNode.remove();
+				}
+			} else {
+				if (totalNode) {
+					totalNode.remove();
+					const mainNode = document.getElementById('main');
+					if (mainNode) { }
+					mainNode.remove();
+					let emptyCartNode = document.querySelector(['emptyCart']);
+					if (!emptyCartNode) {
+						emptyCartNode = document.createElement('p');
+						emptyCartNode.innerHTML = `	<p emptyCart>Cart is empty.</p>`;
+						document.querySelector('body').appendChild(emptyCartNode);
+					}
+				}
+			}
+
+		}
+	}
+</script>
+
+</html>
